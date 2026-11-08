@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # B5 - External Secrets Operator: IRSA restricted to the two secrets owned by
-# oficina-infra-database, the Helm release, and the ClusterSecretStore that the
+# oficina-infra-fundacao, the Helm release, and the ClusterSecretStore that the
 # application ExternalSecret references.
 # ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "external_secrets" {

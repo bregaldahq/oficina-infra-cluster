@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Internal NLB consumed by the API Gateway VPC Link (oficina-lambda-auth).
+# Internal NLB consumed by the API Gateway VPC Link (oficina-gateway-auth).
 #
 # Ownership decision (see README, "NLB: quem cria o quê"):
 #   * Terraform owns the load balancer, the target group and the :80 listener,

@@ -110,5 +110,5 @@ jobs:
           curl -sS -X POST https://api.newrelic.com/graphql \
             -H "Api-Key: ${NEW_RELIC_API_KEY}" \
             -H 'Content-Type: application/json' \
-            -d "{\"query\":\"mutation { changeTrackingCreateDeployment(deployment: {entityGuid: \\\"${{ secrets.NEW_RELIC_INFRA_ENTITY_GUID }}\\\", version: \\\"${GITHUB_SHA}\\\", user: \\\"${GITHUB_ACTOR}\\\", description: \\\"oficina-infra-k8s ${{ steps.env.outputs.name }}\\\"}) { deploymentId } }\"}" \
+            -d "{\"query\":\"mutation { changeTrackingCreateDeployment(deployment: {entityGuid: \\\"${{ secrets.NEW_RELIC_INFRA_ENTITY_GUID }}\\\", version: \\\"${GITHUB_SHA}\\\", user: \\\"${GITHUB_ACTOR}\\\", description: \\\"oficina-infra-cluster ${{ steps.env.outputs.name }}\\\"}) { deploymentId } }\"}" \
             || echo "New Relic marker failed (non-blocking)"
