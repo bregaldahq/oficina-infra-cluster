@@ -1,5 +1,5 @@
 variable "environment" {
-  description = "Deployment environment. Must match the SSM parameter namespace published by oficina-infra-database."
+  description = "Deployment environment. Must match the SSM parameter namespace published by oficina-infra-fundacao."
   type        = string
 
   validation {

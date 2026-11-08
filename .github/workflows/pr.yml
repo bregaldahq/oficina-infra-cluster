@@ -64,7 +64,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # Este stack LE a rede e os segredos do SSM publicados pelo repositorio
-      # oficina-infra-database. Num ambiente que nunca foi provisionado esses
+      # oficina-infra-fundacao. Num ambiente que nunca foi provisionado esses
       # parametros nao existem e o plan falha por ausencia de dependencia, nao por
       # defeito do codigo — um check vermelho permanente que ensina o time a
       # ignorar check vermelho. Aqui a ausencia vira "skipped", explicita.

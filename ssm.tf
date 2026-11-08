@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # B10 - Published contract (CONTRATOS.md section 2). Parameter names are literal
-# and consumed by oficina-lambda-auth and by the application repository.
+# and consumed by oficina-gateway-auth and by the application repository.
 # ---------------------------------------------------------------------------
 resource "aws_ssm_parameter" "eks_cluster_name" {
   name  = "/oficina/${var.environment}/eks/cluster_name"
