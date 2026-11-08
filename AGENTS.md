@@ -46,8 +46,9 @@ repositório principal `oficina-mecanica`. O contrato entre os repos é o
   `terraform validate`.
 
 O `.terraform.lock.hcl` é versionado: se mudar provider, atualize-o com
-`bin/ws exec cluster terraform providers lock -platform=linux_amd64 -platform=darwin_arm64
--platform=darwin_amd64` e commite.
+`bin/ws exec cluster sh -c 'terraform init -backend=false && terraform providers lock
+-platform=linux_amd64 -platform=darwin_arm64 -platform=darwin_amd64'` (o `init` vem antes por
+causa dos módulos) e commite.
 
 ## Armadilhas
 
