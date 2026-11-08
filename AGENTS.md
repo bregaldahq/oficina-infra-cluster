@@ -45,7 +45,9 @@ repositório principal `oficina-mecanica`. O contrato entre os repos é o
 - Direto: `terraform fmt -check -recursive`, `terraform init -backend=false`,
   `terraform validate`.
 
-O `.terraform.lock.hcl` é ignorado neste repo: cada `init` resolve os providers de novo.
+O `.terraform.lock.hcl` é versionado: se mudar provider, atualize-o com
+`bin/ws exec cluster terraform providers lock -platform=linux_amd64 -platform=darwin_arm64
+-platform=darwin_amd64` e commite.
 
 ## Armadilhas
 
