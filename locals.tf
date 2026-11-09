@@ -1,9 +1,9 @@
 locals {
   name_prefix  = "oficina-${var.environment}"
   cluster_name = "${local.name_prefix}-eks"
-  repo_name    = "oficina-infra-k8s"
+  repo_name    = "oficina-infra-k8s" # old name of oficina-infra-cluster; changing it rolls every node (tags reach the launch template)
 
-  # Foundation layer (oficina-infra-database) is consumed exclusively through SSM.
+  # Foundation layer (oficina-infra-fundacao) is consumed exclusively through SSM.
   vpc_id             = data.aws_ssm_parameter.vpc_id.value
   vpc_cidr           = data.aws_ssm_parameter.vpc_cidr.value
   public_subnet_ids  = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
