@@ -23,9 +23,11 @@ module "eks" {
   #
   # Scoped to the two application namespaces instead of the whole cluster: the app
   # pipeline deploys workloads, it has no business touching kube-system.
+  # Fase 4: o pipeline de cada microsservico entra com o mesmo acesso do da
+  # aplicacao (app_ci e o do servico de OS).
   access_entries = {
-    app_ci = {
-      principal_arn = var.app_ci_role_arn
+    for name, role_arn in merge({ app_ci = var.app_ci_role_arn }, var.service_ci_role_arns) : name => {
+      principal_arn = role_arn
       type          = "STANDARD"
 
       # Mapped to a Kubernetes group so custom RBAC can be bound to it below:
@@ -48,7 +50,20 @@ module "eks" {
     coredns                = {}
     eks-pod-identity-agent = {}
     kube-proxy             = {}
-    vpc-cni                = {}
+
+    # Fase 4: tres servicos com api e worker nao cabem no limite de pods por ENI
+    # de dois t3.medium (17 cada). Prefix delegation leva o limite a 110 por
+    # node sem node a mais. before_compute: o addon precisa estar configurado
+    # antes de os nodes nascerem, senao eles sobem com o limite antigo.
+    vpc-cni = {
+      before_compute = true
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION = "true"
+          WARM_PREFIX_TARGET       = "1"
+        }
+      })
+    }
   }
 
   eks_managed_node_group_defaults = {

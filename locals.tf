@@ -9,8 +9,6 @@ locals {
   public_subnet_ids  = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
   private_subnet_ids = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
   db_client_sg_id    = data.aws_ssm_parameter.db_client_sg_id.value
-  db_secret_arn      = data.aws_ssm_parameter.db_secret_arn.value
-  auth_secret_arn    = data.aws_ssm_parameter.auth_secret_arn.value
 
   account_id = data.aws_caller_identity.current.account_id
 
@@ -23,6 +21,14 @@ locals {
     prod = "oficina-prod"
   }
   app_namespace = local.app_namespaces[var.environment]
+
+  # Fase 4 (docs/fase-4/CONTRATOS.md, secoes 2 e 4, no repo oficina-api): o NLB e
+  # de camada 4, entao cada microsservico novo tem a propria porta. O servico de
+  # OS (oficina-api) continua na :80, com os recursos e parametros da Fase 3.
+  service_listeners = {
+    faturamento = { port = 81, health_path = "/api/billing/health" }
+    execucao    = { port = 82, health_path = "/api/execution/health" }
+  }
 
   # Kubernetes group carried by the application pipeline (see eks.tf access entry).
   app_deployer_group = "oficina-app-deployers"

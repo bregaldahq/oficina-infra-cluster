@@ -11,10 +11,11 @@ data "aws_iam_policy_document" "external_secrets" {
       "secretsmanager:GetSecretValue",
       "secretsmanager:DescribeSecret",
     ]
-    # Wildcard suffix covers the 6-character suffix AWS appends to secret ARNs.
+    # Fase 4: cada microsservico cria os proprios segredos sob oficina/<env>/
+    # (docs/fase-4/CONTRATOS.md, secao 3), e este repo aplica antes deles. Por
+    # isso o prefixo do ambiente, e nao uma lista de ARNs.
     resources = [
-      "${local.db_secret_arn}*",
-      "${local.auth_secret_arn}*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.region}:${local.account_id}:secret:oficina/${var.environment}/*",
     ]
   }
 
@@ -28,7 +29,7 @@ data "aws_iam_policy_document" "external_secrets" {
 
 resource "aws_iam_policy" "external_secrets" {
   name        = "${local.name_prefix}-external-secrets"
-  description = "Read-only access to the oficina/${var.environment} db and auth secrets"
+  description = "Read-only access to the secrets under oficina/${var.environment}/"
   policy      = data.aws_iam_policy_document.external_secrets.json
 
   tags = local.tags

@@ -25,11 +25,3 @@ data "aws_ssm_parameter" "private_subnet_ids" {
 data "aws_ssm_parameter" "db_client_sg_id" {
   name = "/oficina/${var.environment}/db/client_sg_id"
 }
-
-data "aws_ssm_parameter" "db_secret_arn" {
-  name = "/oficina/${var.environment}/db/secret_arn"
-}
-
-data "aws_ssm_parameter" "auth_secret_arn" {
-  name = "/oficina/${var.environment}/auth/secret_arn"
-}
