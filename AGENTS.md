@@ -33,6 +33,8 @@ repositório principal `oficina-mecanica`. O contrato entre os repos é o
 - `ssm.tf`: publica `eks/*`, `ecr/repository_url` e `nlb/*`.
 - `eks.tf`: o role de CI da aplicação e os de `service_ci_role_arns` (Fase 4) recebem a mesma
   entrada de acesso. O `vpc-cni` roda com *prefix delegation*, configurado antes dos nodes.
+  O limite de pods é fixado quando o node nasce: num ambiente que já existia, os nodes antigos
+  continuam com 17 pods até serem reciclados (um por vez, pelo usuário).
 
 ## Contratos
 

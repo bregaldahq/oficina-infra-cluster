@@ -118,3 +118,11 @@ module "eks" {
 
   tags = local.tags
 }
+
+# Fase 4: com before_compute o modulo passa a guardar o addon vpc-cni em outro
+# endereco. Sem este bloco, um ambiente que ja existe veria destroy + create do
+# addon num cluster vivo. Num ambiente novo o bloco nao faz nada.
+moved {
+  from = module.eks.aws_eks_addon.this["vpc-cni"]
+  to   = module.eks.aws_eks_addon.before_compute["vpc-cni"]
+}
