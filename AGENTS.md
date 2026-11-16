@@ -19,22 +19,31 @@ repositório principal `oficina-mecanica`. O contrato entre os repos é o
 - `nlb.tf`: NLB **interno**, target group `target_type = ip` e listener `:80`, todos criados
   **pelo Terraform**, não pelo Load Balancer Controller. A Lambda aplica antes da app e precisa
   dos ARNs já existentes. Os Pods entram no target group pelo `TargetGroupBinding` da aplicação.
+  Na Fase 4, cada microsserviço novo tem um listener e um target group próprios
+  (`local.service_listeners`: Faturamento `:81`, Execução `:82`). Serviço novo entra nesse mapa.
 - `addons-*.tf`:
   - `aws-load-balancer-controller` (IRSA), que só registra os targets;
   - `metrics-server`, pré-requisito do HPA;
-  - `external-secrets` (IRSA restrita aos 2 segredos), que cria o `ClusterSecretStore`
+  - `external-secrets` (IRSA restrita ao prefixo `oficina/<env>/`), que cria o `ClusterSecretStore`
     **`oficina-secretsmanager`**;
   - `nri-bundle` (New Relic).
 - `namespaces.tf`: `oficina-hml` e `oficina-prod`.
 - `rbac-app-deployer.tf`: dá ao role de CI da aplicação permissão sobre as CRDs
   `TargetGroupBinding` e `ExternalSecret`. CRD nova usada pela app precisa entrar aqui.
 - `ssm.tf`: publica `eks/*`, `ecr/repository_url` e `nlb/*`.
+- `eks.tf`: o role de CI da aplicação e os de `service_ci_role_arns` (Fase 4) recebem a mesma
+  entrada de acesso. O `vpc-cni` roda com *prefix delegation*, configurado antes dos nodes.
+  O limite de pods é fixado quando o node nasce: num ambiente que já existia, os nodes antigos
+  continuam com 17 pods até serem reciclados (um por vez, pelo usuário).
 
 ## Contratos
 
-- **Consome:** `network/*`, `db/client_sg_id` e os ARNs dos segredos (fundação).
+- **Consome:** `network/*` e `db/client_sg_id` (fundação). Os ARNs dos segredos deixaram de ser
+  lidos na Fase 4: a policy do External Secrets usa o prefixo `oficina/<env>/`.
 - **Publica:** `eks/*`, `ecr/repository_url`, `nlb/arn`, `nlb/listener_arn`,
-  `nlb/target_group_arn` e `eks/namespace` (seção 2).
+  `nlb/target_group_arn` e `eks/namespace` (seção 2). Da Fase 4 (`docs/fase-4/CONTRATOS.md`,
+  §2): `nlb/dns_name` e, por serviço, `nlb/<servico>/listener_arn` e
+  `nlb/<servico>/target_group_arn`.
 - O nome `oficina-secretsmanager` do `ClusterSecretStore` é contrato com o `ExternalSecret` da
   aplicação (adendo 2).
 

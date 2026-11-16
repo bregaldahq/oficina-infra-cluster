@@ -113,6 +113,16 @@ variable "chart_version_nri_bundle" {
   default = "5.0.83"
 }
 
+variable "service_ci_role_arns" {
+  description = <<-DESC
+    Roles de CI dos microsservicos da Fase 4 (faturamento, execucao), por nome.
+    Cada um recebe o mesmo acesso de app_ci_role_arn. Os roles nascem no
+    bootstrap/aws do repositorio principal e precisam existir antes do apply.
+  DESC
+  type        = map(string)
+  default     = {}
+}
+
 variable "app_ci_role_arn" {
   description = <<-DESC
     IAM role used by the application repository's pipeline, granted access to the

@@ -35,3 +35,10 @@ ecr_image_retention_count = 10
 
 newrelic_enabled = true
 app_ci_role_arn  = "arn:aws:iam::474717634842:role/oficina-gha-oficina-mecanica-tech-challenge"
+
+# Fase 4: pipelines dos microsservicos novos (roles criados no bootstrap/aws do
+# repositorio principal; precisam existir antes do apply).
+service_ci_role_arns = {
+  faturamento_ci = "arn:aws:iam::474717634842:role/oficina-gha-oficina-faturamento"
+  execucao_ci    = "arn:aws:iam::474717634842:role/oficina-gha-oficina-execucao"
+}
