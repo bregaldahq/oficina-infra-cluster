@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Internal NLB consumed by the API Gateway VPC Link (oficina-lambda-auth).
+# Internal NLB consumed by the API Gateway VPC Link (oficina-gateway-auth).
 #
 # Ownership decision (see README, "NLB: quem cria o quê"):
 #   * Terraform owns the load balancer, the target group and the :80 listener,
@@ -65,4 +65,48 @@ resource "aws_security_group_rule" "nodes_from_vpc_http" {
   to_port           = 65535
   protocol          = "tcp"
   cidr_blocks       = [local.vpc_cidr]
+}
+
+# ---------------------------------------------------------------------------
+# Fase 4: um listener e um target group por microsservico novo. Mesmo desenho
+# do :80: o Terraform cria os ARNs antes de os servicos existirem, e o LB
+# Controller registra os pods pelo TargetGroupBinding de cada servico.
+# A regra nodes_from_vpc_http acima ja cobre o trafego ate os pods.
+# ---------------------------------------------------------------------------
+resource "aws_lb_target_group" "service" {
+  for_each = local.service_listeners
+
+  name        = "${local.name_prefix}-${each.key}-tg"
+  port        = 80
+  protocol    = "TCP"
+  vpc_id      = local.vpc_id
+  target_type = "ip"
+
+  health_check {
+    protocol            = "HTTP"
+    path                = each.value.health_path
+    port                = "traffic-port"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    interval            = 10
+  }
+
+  lifecycle {
+    ignore_changes = [tags_all]
+  }
+
+  tags = merge(local.tags, { Name = "${local.name_prefix}-${each.key}-tg" })
+}
+
+resource "aws_lb_listener" "service" {
+  for_each = local.service_listeners
+
+  load_balancer_arn = aws_lb.internal.arn
+  port              = each.value.port
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.service[each.key].arn
+  }
 }

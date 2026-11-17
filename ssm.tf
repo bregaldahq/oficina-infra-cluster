@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # B10 - Published contract (CONTRATOS.md section 2). Parameter names are literal
-# and consumed by oficina-lambda-auth and by the application repository.
+# and consumed by oficina-gateway-auth and by the application repository.
 # ---------------------------------------------------------------------------
 resource "aws_ssm_parameter" "eks_cluster_name" {
   name  = "/oficina/${var.environment}/eks/cluster_name"
@@ -65,5 +65,33 @@ resource "aws_ssm_parameter" "app_namespace" {
   name  = "/oficina/${var.environment}/eks/namespace"
   type  = "String"
   value = local.app_namespace
+  tags  = local.tags
+}
+
+# --- Fase 4 (docs/fase-4/CONTRATOS.md, secao 2) ------------------------------
+
+# A Lambda auth-cpf chama o servico de OS por dentro da VPC, pelo NLB.
+resource "aws_ssm_parameter" "nlb_dns_name" {
+  name  = "/oficina/${var.environment}/nlb/dns_name"
+  type  = "String"
+  value = aws_lb.internal.dns_name
+  tags  = local.tags
+}
+
+resource "aws_ssm_parameter" "service_listener_arn" {
+  for_each = local.service_listeners
+
+  name  = "/oficina/${var.environment}/nlb/${each.key}/listener_arn"
+  type  = "String"
+  value = aws_lb_listener.service[each.key].arn
+  tags  = local.tags
+}
+
+resource "aws_ssm_parameter" "service_target_group_arn" {
+  for_each = local.service_listeners
+
+  name  = "/oficina/${var.environment}/nlb/${each.key}/target_group_arn"
+  type  = "String"
+  value = aws_lb_target_group.service[each.key].arn
   tags  = local.tags
 }

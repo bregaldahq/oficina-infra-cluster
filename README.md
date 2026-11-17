@@ -1,10 +1,14 @@
-# oficina-infra-k8s
+# oficina-infra-cluster
+
+> Parte do sistema **Oficina Mecânica**. Comece pelo repositório principal, [`oficina-mecanica`](https://github.com/bregaldahq/oficina-mecanica): visão geral, mapa dos repositórios e regras para mudanças entre eles.
+>
+> [`oficina-infra-fundacao`](https://github.com/bregaldahq/oficina-infra-fundacao) → **`oficina-infra-cluster`** → [`oficina-gateway-auth`](https://github.com/bregaldahq/oficina-gateway-auth) → [`oficina-api`](https://github.com/bregaldahq/oficina-api)
 
 Camada de **computação** da Fase 3: cluster EKS, node group, IRSA, add-ons Helm, ECR,
 NLB interno e os parâmetros SSM que os repositórios seguintes consomem.
 
 Este repositório **não** cria rede, banco nem segredos — isso pertence a
-`oficina-infra-database`. Todo o acoplamento acontece via **SSM Parameter Store**;
+`oficina-infra-fundacao`. Todo o acoplamento acontece via **SSM Parameter Store**;
 `terraform_remote_state` não é usado em lugar nenhum.
 
 | Item | Valor |
@@ -26,13 +30,13 @@ flowchart TB
         SSMOUT["/oficina/&lt;env&gt;/eks/*<br>/oficina/&lt;env&gt;/ecr/repository_url<br>/oficina/&lt;env&gt;/nlb/arn<br>/oficina/&lt;env&gt;/nlb/listener_arn"]
     end
 
-    DB["oficina-infra-database<br>(VPC, subnets, RDS, secrets)"] -->|publica| SSMIN
-    SSMIN -->|data aws_ssm_parameter| TF["oficina-infra-k8s<br>(este repo)"]
+    DB["oficina-infra-fundacao<br>(VPC, subnets, RDS, secrets)"] -->|publica| SSMIN
+    SSMIN -->|data aws_ssm_parameter| TF["oficina-infra-cluster<br>(este repo)"]
     TF -->|publica| SSMOUT
-    SSMOUT --> LAMBDA["oficina-lambda-auth<br>(API GW + VPC Link)"]
-    SSMOUT --> APP["oficina-mecanica-tech-challenge<br>(Deployment/Service/HPA)"]
+    SSMOUT --> LAMBDA["oficina-gateway-auth<br>(API GW + VPC Link)"]
+    SSMOUT --> APP["oficina-api<br>(Deployment/Service/HPA)"]
 
-    subgraph VPC["VPC (owned by oficina-infra-database)"]
+    subgraph VPC["VPC (owned by oficina-infra-fundacao)"]
         subgraph PUB["Subnets públicas — ADR-010: sem NAT"]
             NODES["EKS managed node group<br>2..4 × t3.small<br>associate_public_ip_address = true<br>SG: node + cluster + db-client"]
         end
@@ -71,11 +75,11 @@ mutuamente exclusivas. **Escolhemos a primeira** e é importante entender por qu
 O `aws_lb` interno, o `aws_lb_target_group` (`target_type = "ip"`) e o
 `aws_lb_listener` na porta 80 são criados **aqui**, no Terraform (`nlb.tf`).
 
-Motivo: `oficina-lambda-auth` precisa do ARN do NLB e do ARN do listener no
+Motivo: `oficina-gateway-auth` precisa do ARN do NLB e do ARN do listener no
 momento do `terraform apply` dele, para montar o VPC Link e a integração
 `HTTP_PROXY`. Se o NLB fosse criado pelo AWS Load Balancer Controller a partir
 de um `Service type=LoadBalancer`, o ARN só existiria **depois** do deploy da
-aplicação — ou seja, a ordem `database → k8s → lambda → app` do contrato ficaria
+aplicação — ou seja, a ordem `fundação → cluster → gateway → api` do contrato ficaria
 impossível, e os parâmetros `/oficina/<env>/nlb/arn` e
 `/oficina/<env>/nlb/listener_arn` só poderiam ser preenchidos por um passo
 manual ou por um segundo apply. Com o NLB no Terraform, o SSM entrega ARNs
@@ -121,7 +125,7 @@ funciona perfeitamente, mas produziria um segundo NLB além do que o Terraform
 cria (custo duplicado) e o ARN só ficaria conhecido depois do deploy da app.
 Se o time preferir esse caminho no futuro, o correto é remover `nlb.tf` daqui e
 alimentar `/oficina/<env>/nlb/*` a partir de um passo de CI do repositório da
-aplicação — e o `oficina-lambda-auth` passaria a depender do app.
+aplicação — e o `oficina-gateway-auth` passaria a depender do app.
 
 > **Resumo:** o NLB, o target group e o listener são criados pelo Terraform; o
 > AWS Load Balancer Controller apenas registra os pods como targets via
@@ -131,7 +135,7 @@ aplicação — e o `oficina-lambda-auth` passaria a depender do app.
 
 ## Pré-requisitos
 
-1. `oficina-infra-database` aplicado no mesmo ambiente (os parâmetros de rede,
+1. `oficina-infra-fundacao` aplicado no mesmo ambiente (os parâmetros de rede,
    `db/client_sg_id`, `db/secret_arn` e `auth/secret_arn` precisam existir).
 2. As **subnets públicas** publicadas em `/oficina/<env>/network/public_subnet_ids`
    precisam ter rota para o Internet Gateway — não há NAT (ADR-010).
@@ -181,7 +185,7 @@ terraform validate
 
 | Arquivo | Conteúdo |
 |---|---|
-| `data.tf` | leitura do contrato SSM publicado por `oficina-infra-database` |
+| `data.tf` | leitura do contrato SSM publicado por `oficina-infra-fundacao` |
 | `eks.tf` | cluster EKS 1.30 + managed node group em subnet pública, com o SG cliente de banco anexado |
 | `ecr.tf` | repositório `oficina-api`, scan on push, lifecycle mantendo 10 imagens |
 | `nlb.tf` | NLB interno, target group `ip` e listener `:80` |
@@ -223,8 +227,8 @@ acesso HTTP vem só do NLB interno, restrito ao CIDR da VPC.
 ## Ordem de apply / destroy entre repositórios
 
 ```
-apply:    oficina-infra-database  →  oficina-infra-k8s  →  oficina-lambda-auth  →  oficina-mecanica-tech-challenge
-destroy:  oficina-mecanica-tech-challenge  →  oficina-lambda-auth  →  oficina-infra-k8s  →  oficina-infra-database
+apply:    oficina-infra-fundacao  →  oficina-infra-cluster  →  oficina-gateway-auth  →  oficina-api
+destroy:  oficina-api  →  oficina-gateway-auth  →  oficina-infra-cluster  →  oficina-infra-fundacao
 ```
 
 Antes de destruir este repositório, remova os workloads da aplicação: o AWS Load
