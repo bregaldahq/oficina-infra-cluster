@@ -57,11 +57,19 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
+      # Sem a conta AWS (desligada entre as fases para não gerar custo), o login falha e o plan
+      # é pulado com um aviso, em vez de deixar todo PR vermelho. Com a conta no ar, o plan roda.
       - name: Configure AWS credentials (OIDC)
+        id: aws
+        continue-on-error: true
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Conta AWS fora do ar
+        if: steps.aws.outcome != 'success'
+        run: echo "::notice::Sem acesso à conta AWS pelo OIDC. Plan pulado; fmt e validate rodaram."
 
       # Este stack LE a rede e os segredos do SSM publicados pelo repositorio
       # oficina-infra-fundacao. Num ambiente que nunca foi provisionado esses
@@ -70,6 +78,7 @@ jobs:
       # ignorar check vermelho. Aqui a ausencia vira "skipped", explicita.
       - name: O ambiente esta provisionado?
         id: guard
+        if: steps.aws.outcome == 'success'
         run: |
           set -uo pipefail
           if aws ssm get-parameter --name "/oficina/${{ matrix.env }}/network/vpc_id" >/dev/null 2>&1; then
